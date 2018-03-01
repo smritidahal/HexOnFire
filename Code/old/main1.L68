@@ -1,0 +1,363 @@
+00000400 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.15.04
+Created On: 2/28/2018 3:39:44 PM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      :  Main 1
+00000000                             3  * Written by :  Smriti Dahal, Sean Hoffman, Cate Yochum
+00000000                             4  * Date       :  2/24/2018
+00000000                             5  * Description:  First attempt at Disassembler
+00000000                             6  *-----------------------------------------------------------
+00000000                             7  
+00000000                             8  *****Test Code*****
+00000000                             9  TESTCODE
+00000000  4E71                      10    NOP
+00000002                            11  
+00000002                            12  ***** Equates Section *****
+00000002                            13  
+00000002                            14  *****MASKS*****
+00000002  =00000001                 15  bitMask       EQU  $1
+00000002  =00000003                 16  twoBitMask    EQU  $0003
+00000002  =00000007                 17  threeBitMask  EQU  $0007
+00000002  =0000000F                 18  nibbleMask    EQU  $000F
+00000002  =0000003F                 19  sixBitMask    EQU  $003F
+00000002  =000000FF                 20  byteMask      EQU  $00FF
+00000002                            21     
+00000002                            22  ***** OPCODE Categories (by first 4 bits) *****
+00000002  =00000000                 23  bits0   EQU  $00
+00000002  =00000001                 24  bits1   EQU  $01
+00000002  =00000002                 25  bits2   EQU  $02
+00000002  =00000003                 26  bits3   EQU  $03
+00000002  =00000004                 27  bits4   EQU  $04
+00000002  =00000005                 28  bits5   EQU  $05
+00000002  =00000006                 29  bits6   EQU  $06
+00000002  =00000007                 30  bits7   EQU  $07
+00000002  =00000008                 31  bits8   EQU  $08
+00000002  =00000009                 32  bits9   EQU  $09
+00000002  =0000000A                 33  bitsA   EQU  $0A
+00000002  =0000000B                 34  bitsB   EQU  $0B
+00000002  =0000000C                 35  bitsC   EQU  $0C
+00000002  =0000000D                 36  bitsD   EQU  $0D
+00000002  =0000000E                 37  bitsE   EQU  $0E
+00000002                            38  
+00000002                            39  * ***** Code Section *****
+00000400                            40        ORG $400
+00000400                            41  START:
+00000400                            42  
+00000400                            43  * Get User Input (Starting and ending address)
+00000400  43F9 0000F003             44                  LEA         startAddr,A1  ;Load A0 with starting address
+00000406  103C 000E                 45                  MOVE.B      #14,D0        ;move 14 onto D0 to be used for trap 15
+0000040A  4E4F                      46                  TRAP        #15           ;display contents of A0 (starting address)
+0000040C                            47  
+0000040C  43F9 0000F037             48                  LEA         endAddr,A1   ;Load A1 with ending addresses
+00000412  103C 000E                 49                  MOVE.B      #14,D0        ;move 14 onto D0 to be used for trap 15
+00000416  4E4F                      50                  TRAP        #15           ;display contents of A1 (ending address)
+00000418                            51  
+00000418                            52  * Save starting/ending addresses to registers (Starting - A0, Ending - A6)
+00000418                            53  * **** TEMP FOR TESTING
+00000418  41F8 0000                 54                  LEA         $00000000,A0
+0000041C  4DF8 0002                 55                  LEA         $00000002,A6
+00000420                            56                  * CLR $00000000             * to test bad opcode, uncomment
+00000420                            57                  * MOVE.W  #$7123,$00000000  * to test bad opcode, uncomment
+00000420                            58  * Check to see if starting address is greater than ending addresses
+00000420                            59  
+00000420                            60  * Check to see if our current address pointer (A0) is the same as the ending address
+00000420  BDC8                      61  loopStart       CMP.L       A0,A6   * Using a Long here to avoid aliasing issues - might need to change it
+00000422                            62  
+00000422                            63  *      If yes, output decoded data to console
+00000422  6700 00EA                 64                  BEQ         finalOutput
+00000426                            65  
+00000426                            66  *      If not, read a word (opcode) into D7 to pass to decoder function
+00000426  3E18                      67                  MOVE.W  (A0)+, D7
+00000428                            68  *           Call opcode decoder function (return number of operands to process)
+00000428  6000 0002                 69                  BRA         opCodeDecode
+0000042C                            70  
+0000042C                            71  
+0000042C                            72  *
+0000042C                            73  opCodeDecode    * decoder function here
+0000042C                            74  *            Compare first 4 bits to each category of opcode
+0000042C  3C07                      75                  MOVE.W  D7,D6           * Move opcode to D6 so we can manipulate it but save it in D7
+0000042E  E95E                      76                  ROL.W   #4,D6           * Rotate word so first four bits are now in the LSB spots
+00000430  0286 0000000F             77                  ANDI.L  #nibbleMask,D6  * Mask the data in D6 so you have just the 4 opcode bits to work with
+00000436                            78  *           This whole section does a compare on the first 4 bits of the opcode and branches to the appropriate category                
+00000436  0C06 0000                 79                  CMPI.B  #bits0,D6
+0000043A  6700 0066                 80                  BEQ     branch0
+0000043E  0C06 0001                 81                  CMPI.B  #bits1,D6
+00000442  6700 0062                 82                  BEQ     branch1
+00000446  0C06 0002                 83                  CMPI.B  #bits2,D6
+0000044A  6700 005E                 84                  BEQ     branch2
+0000044E  0C06 0003                 85                  CMPI.B  #bits3,D6
+00000452  6700 005A                 86                  BEQ     branch3
+00000456  0C06 0004                 87                  CMPI.B  #bits4,D6
+0000045A  6700 0056                 88                  BEQ     branch4
+0000045E  0C06 0005                 89                  CMPI.B  #bits5,D6
+00000462  6700 0076                 90                  BEQ     branch5
+00000466  0C06 0006                 91                  CMPI.B  #bits6,D6
+0000046A  6700 0072                 92                  BEQ     branch6
+0000046E  0C06 0008                 93                  CMPI.B  #bits8,D6
+00000472  6700 006E                 94                  BEQ     branch8
+00000476  0C06 0009                 95                  CMPI.B  #bits9,D6
+0000047A  6700 006A                 96                  BEQ     branch9
+0000047E  0C06 000B                 97                  CMPI.B  #bitsB,D6
+00000482  6700 0066                 98                  BEQ     branchB
+00000486  0C06 000C                 99                  CMPI.B  #bitsC,D6
+0000048A  6700 0062                100                  BEQ     branchC
+0000048E  0C06 000D                101                  CMPI.B  #bitsD,D6
+00000492  6700 005E                102                  BEQ     branchD
+00000496  0C06 000E                103                  CMPI.B  #bitsE,D6
+0000049A  6700 005A                104                  BEQ     branchE
+0000049E  6000 005E                105                  BRA     outputDATA
+000004A2                           106  
+000004A2                           107  * Branch for opcodes starting with 0000 - 0 - BCLR, CMPI, ORI                
+000004A2  6000 005A                108  branch0         BRA     outputDATA
+000004A6                           109  
+000004A6                           110  
+000004A6                           111  * Branch for opcodes starting with 0001 - 1 - MOVE.B
+000004A6  6000 0056                112  branch1         BRA     outputDATA
+000004AA                           113  
+000004AA                           114  
+000004AA                           115  * Branch for opcodes starting with 0010 - 2 - MOVE.L, MOVEA.L
+000004AA  6000 0052                116  branch2         BRA     outputDATA
+000004AE                           117  
+000004AE                           118  
+000004AE                           119  * Branch for opcodes starting with 0011 - 3 - MOVE.W, MOVEA.W
+000004AE  6000 004E                120  branch3         BRA     outputDATA
+000004B2                           121  
+000004B2                           122  
+000004B2                           123  * Branch for opcodes starting with 0100 - 4 - LEA, MOVEM, NEG, NOP, JSR, RTS
+000004B2  3C07                     124  branch4         MOVE.W  D7,D6               * Move opcode to D6 so we can manipulate it but save it in D7
+000004B4  EF5E                     125                  ROL.W   #7,D6               * Rotate word so destination register bits are now in the LSB spots
+000004B6  0286 00000007            126                  ANDI.L  #threeBitMask,D6    * Isolate destination register bits (bits 9-11)
+000004BC                           127                  * If 111, then it could be LEA, NOP, JSR, or RTS
+000004BC  0C06 0007                128                  CMPI.B  #bits7,D6
+000004C0  6700 0006                129                  BEQ     branch43
+000004C4                           130                  * If not, it could be MOVEM or NEG
+000004C4  6000 0038                131                  BRA     outputDATA
+000004C8                           132  * branch43 - 4 = opcode (first 4 bits) 3 = destination register bits (9-11)
+000004C8  3C07                     133  branch43        MOVE.W  D7,D6               * Move opcode to D6 so we can manipulate it but save it in D7
+000004CA  1A3C 000A                134                  MOVE.B  #bitsA,D5           * Since we need to rotate more than 8 bits with ROL, we have to put the value (10) into a register
+000004CE  EE5E                     135                  ROR.W   #7,D6               * Rotate word so destination mode bits are now in the LSB spots
+000004D0  0286 00000007            136                  ANDI.L  #threeBitMask,D6    * Isolate destination register bits (bits 6-8)                    
+000004D6  6000 0026                137                  BRA     outputDATA
+000004DA                           138  
+000004DA                           139  * Branch for opcodes starting with 0101 - 5 - SUBQ
+000004DA  6000 0022                140  branch5         BRA     outputDATA
+000004DE                           141  
+000004DE                           142  
+000004DE                           143  * Branch for opcodes starting with 0110 - 6 - Bcc's
+000004DE  6000 001E                144  branch6         BRA     outputDATA
+000004E2                           145  
+000004E2                           146  
+000004E2                           147  * Branch for opcodes starting with 1000 - 8 - DIVS, OR
+000004E2  6000 001A                148  branch8         BRA     outputDATA
+000004E6                           149  
+000004E6                           150  
+000004E6                           151  * Branch for opcodes starting with 1001 - 9 - SUB
+000004E6  6000 0016                152  branch9         BRA     outputDATA
+000004EA                           153  
+000004EA                           154  
+000004EA                           155  * Branch for opcodes starting with 1011 - B - CMP, EOR
+000004EA  6000 0012                156  branchB         BRA     outputDATA
+000004EE                           157  
+000004EE                           158  
+000004EE                           159  * Branch for opcodes starting with 1100 - C - MULS
+000004EE  6000 000E                160  branchC         BRA     outputDATA
+000004F2                           161  
+000004F2                           162  
+000004F2                           163  * Branch for opcodes starting with 1101 - D - ADD, ADDA
+000004F2  6000 000A                164  branchD         BRA     outputDATA
+000004F6                           165  
+000004F6                           166  
+000004F6                           167  * Branch for opcodes starting with 1110 - E - ASR, ASL, LSR, LSL, ROL, ROR
+000004F6  6000 0006                168  branchE         BRA     outputDATA
+000004FA                           169  
+000004FA                           170  
+000004FA                           171        
+000004FA                           172  *            Increment address by appropriate number of bytes
+000004FA                           173  
+000004FA                           174  *            Loop back to Checking current address against ending address
+000004FA  6000 FF24                175                  BRA         loopStart
+000004FE                           176  * If the program encounters a word not in the specifications it outputs "DATA" to the console
+000004FE  43F9 0000F098            177  outputDATA      LEA DATAString,A1   * Load DATAString into A1 for printing
+00000504  103C 000E                178                  MOVE.B      #14,D0  * Set trap task to 14
+00000508  4E4F                     179                  TRAP        #15     * display contents of A1 (DATAString)
+0000050A  6000 FF14                180                  BRA         loopStart
+0000050E                           181  finalOutput     * output function here
+0000050E  FFFF FFFF                182                  SIMHALT
+00000512                           183  
+00000512                           184  ***** Data Section *****
+00000512                           185  
+0000F000                           186     ORG    $0F000
+0000F000                           187  
+0000F000                           188  *****IO TOOLS*****
+0000F000  =0000000D                189  cr  EQU $0D
+0000F000  =0000000A                190  lf  EQU $0A
+0000F000= 0D 0A 00                 191  newLine DC.B  cr,lf,0
+0000F003                           192  
+0000F003                           193  *****IO Messages*****
+0000F003= 50 6C 65 61 73 65 ...    194  startAddr   DC.B    'Please enter a starting address for the program: ',CR,LF,0
+0000F037= 50 6C 65 61 73 65 ...    195  endAddr     DC.B    'Please enter an ending address for the program: ',CR,LF,0
+0000F06A                           196  
+0000F06A                           197  ******Op Code Output Strings*****
+0000F06A= 41 44 44 41 00           198  ADDAString  DC.B  'ADDA',0
+0000F06F= 41 44 44 00              199  ADDString   DC.B  'ADD',0
+0000F073= 41 53 4C 00              200  ASLString   DC.B  'ASL',0
+0000F077= 41 53 52 00              201  ASRString   DC.B  'ASR',0
+0000F07B= 42 43 53 00              202  BCSString   DC.B  'BCS',0
+0000F07F= 42 47 45 00              203  BGEString   DC.B  'BGE',0
+0000F083= 42 4C 54 00              204  BLTString   DC.B  'BLT',0
+0000F087= 42 52 41 00              205  BRAString   DC.B  'BRA',0
+0000F08B= 42 56 43 00              206  BVCString   DC.B  'BVC',0
+0000F08F= 43 4D 50 00              207  CMPString   DC.B  'CMP',0
+0000F093= 43 4D 50 49 00           208  CMPIString  DC.B  'CMPI',0
+0000F098= 44 41 54 41 00           209  DATAString  DC.B  'DATA',0
+0000F09D= 44 49 56 53 00           210  DIVSString  DC.B  'DIVS',0
+0000F0A2= 45 4F 52 00              211  EORString   DC.B  'EOR',0
+0000F0A6= 4A 53 52 00              212  JSRString   DC.B  'JSR',0
+0000F0AA= 4C 45 41 00              213  LEAString   DC.B  'LEA',0
+0000F0AE= 4C 53 4C 00              214  LSLString   DC.B  'LSL',0
+0000F0B2= 4C 53 52 00              215  LSRString   DC.B  'LSR',0
+0000F0B6= 4D 4F 56 45 41 00        216  MOVEAString DC.B  'MOVEA',0
+0000F0BC= 4D 4F 56 45 4D 00        217  MOVEMString DC.B  'MOVEM',0
+0000F0C2= 4D 4F 56 45 00           218  MOVEString  DC.B  'MOVE',0
+0000F0C7= 4D 55 4C 53 00           219  MULSString  DC.B  'MULS',0
+0000F0CC= 4E 45 47 00              220  NEGString   DC.B  'NEG',0
+0000F0D0= 4E 4F 50 00              221  NOPString   DC.B  'NOP',0
+0000F0D4= 4F 52 49 00              222  ORIString   DC.B  'ORI',0
+0000F0D8= 4F 52 00                 223  ORString    DC.B  'OR',0
+0000F0DB= 52 4F 4C 00              224  ROLString   DC.B  'ROL',0
+0000F0DF= 52 4F 52 00              225  RORString   DC.B  'ROR',0
+0000F0E3= 52 54 53 00              226  RTSString   DC.B  'RTS',0
+0000F0E7= 53 55 42 00              227  SUBString   DC.B  'SUB',0
+0000F0EB= 53 55 42 51 00           228  SUBQString  DC.B  'SUBQ',0
+0000F0F0                           229  
+0000F0F0                           230  *****Size Output Strings*****
+0000F0F0= 2E 42 20 00              231  byteModeString  DC.B  '.B ',0
+0000F0F4= 2E 4C 20 00              232  longModeString  DC.B  '.L ',0
+0000F0F8= 2E 57 20 00              233  wordModeString  DC.B  '.W ',0
+0000F0FC                           234  
+0000F0FC                           235  *****Register Output Strings*****
+0000F0FC= 41 00                    236  addressRegString  DC.B  'A',0
+0000F0FE= 44 00                    237  dataRegString     DC.B  'D',0
+0000F100                           238  
+0000F100                           239  *****Other EA Output Strings*****
+0000F100= 2C 00                    240  comma             DC.B  ',',0
+0000F102= 2D 00                    241  decrementString   DC.B  '-',0
+0000F104= 23 00                    242  immediateString   DC.B  '#',0
+0000F106= 2B 00                    243  incrementString   DC.B  '+',0
+0000F108= 28 00                    244  parenLeft         DC.B  '(',0
+0000F10A= 29 00                    245  parenRight        DC.B  ')',0
+0000F10C                           246  
+0000F10C                           247  ******OP CODES******
+0000F10C= 4E71                     248  nopOpCode  DC.W  $4E71   *OP CODE FOR NOP*
+0000F10E= 4E75                     249  rtsOpCode  DC.W  $4E75   *OP CODE FOR RTS*
+0000F110                           250  
+0000F110                           251  *****SIZE CODES*****
+0000F110= 00                       252  byte  DC.B  $0
+0000F111= 01                       253  word  DC.B  $1
+0000F112= 02                       254  long  DC.B  $2
+0000F113                           255  
+0000F113                           256  
+0000F113                           257  
+0000F113                           258      END    START        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+ADDASTRING          F06A
+ADDRESSREGSTRING    F0FC
+ADDSTRING           F06F
+ASLSTRING           F073
+ASRSTRING           F077
+BCSSTRING           F07B
+BGESTRING           F07F
+BITMASK             1
+BITS0               0
+BITS1               1
+BITS2               2
+BITS3               3
+BITS4               4
+BITS5               5
+BITS6               6
+BITS7               7
+BITS8               8
+BITS9               9
+BITSA               A
+BITSB               B
+BITSC               C
+BITSD               D
+BITSE               E
+BLTSTRING           F083
+BRANCH0             4A2
+BRANCH1             4A6
+BRANCH2             4AA
+BRANCH3             4AE
+BRANCH4             4B2
+BRANCH43            4C8
+BRANCH5             4DA
+BRANCH6             4DE
+BRANCH8             4E2
+BRANCH9             4E6
+BRANCHB             4EA
+BRANCHC             4EE
+BRANCHD             4F2
+BRANCHE             4F6
+BRASTRING           F087
+BVCSTRING           F08B
+BYTE                F110
+BYTEMASK            FF
+BYTEMODESTRING      F0F0
+CMPISTRING          F093
+CMPSTRING           F08F
+COMMA               F100
+CR                  D
+DATAREGSTRING       F0FE
+DATASTRING          F098
+DECREMENTSTRING     F102
+DIVSSTRING          F09D
+ENDADDR             F037
+EORSTRING           F0A2
+FINALOUTPUT         50E
+IMMEDIATESTRING     F104
+INCREMENTSTRING     F106
+JSRSTRING           F0A6
+LEASTRING           F0AA
+LF                  A
+LONG                F112
+LONGMODESTRING      F0F4
+LOOPSTART           420
+LSLSTRING           F0AE
+LSRSTRING           F0B2
+MOVEASTRING         F0B6
+MOVEMSTRING         F0BC
+MOVESTRING          F0C2
+MULSSTRING          F0C7
+NEGSTRING           F0CC
+NEWLINE             F000
+NIBBLEMASK          F
+NOPOPCODE           F10C
+NOPSTRING           F0D0
+OPCODEDECODE        42C
+ORISTRING           F0D4
+ORSTRING            F0D8
+OUTPUTDATA          4FE
+PARENLEFT           F108
+PARENRIGHT          F10A
+ROLSTRING           F0DB
+RORSTRING           F0DF
+RTSOPCODE           F10E
+RTSSTRING           F0E3
+SIXBITMASK          3F
+START               400
+STARTADDR           F003
+SUBQSTRING          F0EB
+SUBSTRING           F0E7
+TESTCODE            0
+THREEBITMASK        7
+TWOBITMASK          3
+WORD                F111
+WORDMODESTRING      F0F8
